@@ -27,21 +27,20 @@ st.markdown(
 	}
 	header, .st-emotion-cache-18ni7ap {
 		display: none;
-	}
+	}	
 	</style>
 	""",
 	unsafe_allow_html=True
 )
 
+
+
 st.title("PDF Extractor AI")
 st.write("Upload your PDF files to get started")
 uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=False)
 
-default_boxes = [
-		{"name": "box1", "bbox": [100, 100, 100, 100]},
-		{"name": "box2", "bbox": [200, 300, 300, 400]}
-	]
 
+default_boxes = st.session_state.get('default_boxes', [])
 
 
 if uploaded_files is not None:
@@ -53,6 +52,7 @@ if uploaded_files is not None:
 	page = doc.load_page(0)
 	pix = page.get_pixmap()
 	img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+	imgforDrawing=img
 	
 	col1, col2 = st.columns([3, 1])
 	# Default JSON for boxes
@@ -64,6 +64,9 @@ if uploaded_files is not None:
 		if "AddLabel" not in st.session_state:
 			if st.button("Label Objects"):
 				AddLabel(image=img)
+				
+
+
 
 
 		boxes_json = st.text_area(
@@ -81,12 +84,12 @@ if uploaded_files is not None:
 
 
 	with col1:
-		draw = ImageDraw.Draw(img)
+		draw = ImageDraw.Draw(imgforDrawing)
 		for box in boxes:
-			x, y, w_box, h_box = box["bbox"]
-			draw.rectangle([x, y, x + w_box, y + h_box], outline="red", width=5)
+			x, y, bottom_x, bottom_y = box["box"]
+			draw.rectangle([x, y, bottom_x, bottom_y], outline="red", width=5)
 
 		# Zoom controls for image
 		
-		img_resized = img.resize((int(img.width * zoom), int(img.height * zoom)))
+		img_resized = imgforDrawing.resize((int(imgforDrawing.width * zoom), int(imgforDrawing.height * zoom)))
 		st.image(img_resized, caption="PDF with red boxes from JSON", use_container_width=False)

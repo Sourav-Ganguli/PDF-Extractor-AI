@@ -1,67 +1,69 @@
 import streamlit as st
-from streamlit_cropper import st_cropper
+from PIL import Image, ImageDraw
+
+
+
+
+
+
+
+
+
 
 @st.dialog("Label Objects")
 def AddLabel(image=None):
     data_label = st.text_input("Data label")
 
-    def normalize_box(cb):
-        if isinstance(cb, dict):
-            left = float(cb.get("left", cb.get("x", 0)))
-            top = float(cb.get("top", cb.get("y", 0)))
-            right = float(cb.get("right", left + cb.get("width", 0)))
-            bottom = float(cb.get("bottom", top + cb.get("height", 0)))
-            return left, top, right, bottom
-        if hasattr(cb, "left") and hasattr(cb, "top") and hasattr(cb, "right") and hasattr(cb, "bottom"):
-            return float(cb.left), float(cb.top), float(cb.right), float(cb.bottom)
-        if isinstance(cb, (list, tuple)) and len(cb) == 4:
-            return tuple(float(v) for v in cb)
-        return 0.0, 0.0, 0.0, 0.0
-
     # Initialize bbox coordinates
     top_x = top_y = bottom_x = bottom_y = 0
 
-    if image is not None:
-        st.write("Draw a rectangle; the bbox will auto-fill below.")
-        crop_box = st_cropper(
-            image,
-            realtime_update=True,
-            return_type="box",  # (left, top, right, bottom)
-            box_color='#FF0000',
-            aspect_ratio=None,
-            key="cropper_bbox"
-        )
-        if crop_box:
-            left, top, right, bottom = normalize_box(crop_box)
-            top_x = int(max(0, left))
-            top_y = int(max(0, top))
-            bottom_x = int(max(0, right))
-            bottom_y = int(max(0, bottom))
-
-    # Bounding box inputs (auto-filled from cropper)
-    st.write("Bounding box (auto-filled from cropper):")
-    _, c1, c2, c3, c4, _ = st.columns([1, 2, 2, 2, 2, 1])
+    # Bounding box inputs
+    st.write("Enter bounding box coordinates:")
+    st.info("💡 Tip: Adjust the coordinates below and see the preview update in real-time.")
+    
+    # Get max values from image dimensions
+    max_x = image.width if image is not None else 1000
+    max_y = image.height if image is not None else 1000
+    
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
-        top_x = st.number_input("Top X", min_value=0, value=top_x, step=1)
+        top_x = st.slider("Top X", min_value=0, max_value=max_x, value=top_x, step=1)
     with c2:
-        top_y = st.number_input("Top Y", min_value=0, value=top_y, step=1)
+        top_y = st.slider("Top Y", min_value=0, max_value=max_y, value=top_y, step=1)
     with c3:
-        bottom_x = st.number_input("Bottom X", min_value=0, value=bottom_x, step=1)
+        bottom_x = st.slider("Bottom X", min_value=0, max_value=max_x, value=bottom_x, step=1)
     with c4:
-        bottom_y = st.number_input("Bottom Y", min_value=0, value=bottom_y, step=1)
+        bottom_y = st.slider("Bottom Y", min_value=0, max_value=max_y, value=bottom_y, step=1)
+    
+    # Preview with rectangle
+    if image is not None:
+        if top_x < bottom_x and top_y < bottom_y:
+            preview_image = image.copy()
+            draw = ImageDraw.Draw(preview_image)
+            draw.rectangle(
+                [(top_x, top_y), (bottom_x, bottom_y)],
+                outline='red',
+                width=3
+            )
+            st.image(preview_image, use_container_width=True, caption="Preview with rectangle")
+        else:
+            st.image(image, use_container_width=True, caption=f"Original image ({image.width}x{image.height})")
+
 
     if st.button("Submit"):
         # Basic bbox validation: bottom should be greater than top
         if bottom_x <= top_x or bottom_y <= top_y:
             st.error("Invalid bounding box: bottom values must be greater than top values.")
             return
-        st.session_state['label_form'] = {
-            "data_label": data_label,
-            "bbox": {
-                "top_x": top_x,
-                "top_y": top_y,
-                "bottom_x": bottom_x,
-                "bottom_y": bottom_y
-            }
-        }
+        
+        # Initialize default_boxes array if it doesn't exist
+        if 'default_boxes' not in st.session_state:
+            st.session_state['default_boxes'] = []
+        
+        # Append the new label and bbox to the array
+        st.session_state['default_boxes'].append({
+            "label": data_label,
+            "box": [top_x, top_y, bottom_x, bottom_y]
+        })
+        
         st.rerun()
