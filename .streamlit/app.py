@@ -1,9 +1,11 @@
-
-
 import streamlit as st
 import fitz  # PyMuPDF
 from PIL import Image, ImageDraw
 from components.label_dialog import AddLabel
+# Import and reload to avoid cache issues
+
+
+
 
 # Set page configuration for screen size (must be first Streamlit command)
 st.set_page_config(
@@ -12,17 +14,6 @@ st.set_page_config(
 	layout="wide",  # Options: "centered", "wide"
 	initial_sidebar_state="expanded"  # Options: "auto", "expanded", "collapsed"
 )
-
-# Dialog definition moved to componenets/label_dialog.py
-
-
-
-
-
-
-
-
-
 
 st.markdown(
 	"""
@@ -51,15 +42,26 @@ default_boxes = [
 
 if uploaded_files is not None:
 	import json
+	
+	# Render first page of PDF to image using PyMuPDF (need this early for dialog)
+	pdf_bytes = uploaded_files.read()
+	doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+	page = doc.load_page(0)
+	pix = page.get_pixmap()
+	img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+	
 	col1, col2 = st.columns([3, 1])
 	# Default JSON for boxes
 
 	with col2:
 		zoom = st.slider("Zoom", min_value=0.2, max_value=3.0, value=1.0, step=0.05)
 		st.markdown("### Edit Boxes JSON")
-		if "vote" not in st.session_state:
+		
+		if "AddLabel" not in st.session_state:
 			if st.button("Label Objects"):
-				AddLabel()			  
+				AddLabel(image=img)
+
+
 		boxes_json = st.text_area(
 			"Edit boxes JSON",
 			value=json.dumps(default_boxes, indent=2),
@@ -75,12 +77,6 @@ if uploaded_files is not None:
 
 
 	with col1:
-		# Render first page of PDF to image using PyMuPDF
-		pdf_bytes = uploaded_files.read()
-		doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-		page = doc.load_page(0)
-		pix = page.get_pixmap()
-		img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
 		draw = ImageDraw.Draw(img)
 		for box in boxes:
 			x, y, w_box, h_box = box["bbox"]

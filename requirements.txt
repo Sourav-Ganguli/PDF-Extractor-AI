@@ -1,8 +1,4 @@
-streamlit==latest
-PyMuPDF
-Pillow
-fitz
-PyMuPDF
-Pillow
 streamlit
-fitz
+PyMuPDF
+Pillow
+streamlit-image-annotation

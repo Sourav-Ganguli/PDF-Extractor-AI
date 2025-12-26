@@ -1,9 +1,23 @@
 import streamlit as st
+import numpy as np
 
 @st.dialog("Label Objects")
-def AddLabel():
+def AddLabel(image=None):
     mode = st.radio("Mode", ["Text", "Table", "AI"], horizontal=True)
     data_label = st.text_input("Data label")
+    
+    # Image annotation section
+    if image is not None:
+        st.write("Annotate the image to define bounding box:")
+
+
+    st.image(image)
+        
+
+
+    
+    # Manual bounding box inputs
+    st.write("Or manually specify bounding box:")
     s_left, c1, c2, c3, c4, s_right = st.columns([1, 2, 2, 2, 2, 1])
     with c1:
         top_x = st.number_input("Top X", min_value=0, value=0, step=1)
@@ -13,6 +27,8 @@ def AddLabel():
         bottom_x = st.number_input("Bottom X", min_value=0, value=0, step=1)
     with c4:
         bottom_y = st.number_input("Bottom Y", min_value=0, value=0, step=1)
+
+
 
     if st.button("Submit"):
         st.session_state['label_form'] = {
