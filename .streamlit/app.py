@@ -1,28 +1,30 @@
+
+
 import streamlit as st
 import fitz  # PyMuPDF
 from PIL import Image, ImageDraw
 from streamlit_drawable_canvas import st_canvas
 
-st.markdown(
-    """
-    <style>
-    .block-container {
-        padding-top: 1rem !important;
-    }
-    header, .st-emotion-cache-18ni7ap {
-        display: none;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Set page configuration for screen size
+# Set page configuration for screen size (must be first Streamlit command)
 st.set_page_config(
 	page_title="PDF Extractor AI",
 	page_icon="😊",  # Smiley icon
 	layout="wide",  # Options: "centered", "wide"
 	initial_sidebar_state="expanded"  # Options: "auto", "expanded", "collapsed"
+)
+
+st.markdown(
+	"""
+	<style>
+	.block-container {
+		padding-top: 1rem !important;
+	}
+	header, .st-emotion-cache-18ni7ap {
+		display: none;
+	}
+	</style>
+	""",
+	unsafe_allow_html=True
 )
 
 st.title("PDF Extractor AI")
