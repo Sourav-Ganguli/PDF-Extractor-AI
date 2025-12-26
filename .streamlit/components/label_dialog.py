@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_cropper import st_cropper
 from PIL import ImageDraw
 import tempfile
 import os
@@ -10,12 +11,48 @@ def AddLabel(image=None):
     # Initialize bbox coordinates
     top_x = top_y = bottom_x = bottom_y = 0
     
-    # Image preview section with rectangle overlay (no external component)
+    # Cropper-based rectangle selection; auto-fills bbox
     if image is not None:
-        st.write("Preview: draw rectangle via inputs; overlay updates live.")
+        st.write("Draw a rectangle; the bbox will auto-fill below.")
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            image.save(tmp_file.name)
+            temp_path = tmp_file.name
+        try:
+            crop_box = st_cropper(
+                image,
+                realtime_update=True,
+                return_type="box",  # (left, top, right, bottom)
+                box_color='#FF0000',
+                aspect_ratio=None,
+                key="cropper_bbox"
+            )
+            if crop_box:
+                # Normalize crop_box which can be a tuple, list, dict, or Box
+                def to_coords(cb):
+                    if isinstance(cb, dict):
+                        # Expect keys like left/top/right/bottom or width/height
+                        left = float(cb.get("left", cb.get("x", 0)))
+                        top = float(cb.get("top", cb.get("y", 0)))
+                        right = float(cb.get("right", left + cb.get("width", 0)))
+                        bottom = float(cb.get("bottom", top + cb.get("height", 0)))
+                        return left, top, right, bottom
+                    if hasattr(cb, "left") and hasattr(cb, "top") and hasattr(cb, "right") and hasattr(cb, "bottom"):
+                        return float(cb.left), float(cb.top), float(cb.right), float(cb.bottom)
+                    if isinstance(cb, (list, tuple)) and len(cb) == 4:
+                        return tuple(float(v) for v in cb)
+                    return 0.0, 0.0, 0.0, 0.0
+
+                left, top, right, bottom = to_coords(crop_box)
+                top_x = int(max(0, left))
+                top_y = int(max(0, top))
+                bottom_x = int(max(0, right))
+                bottom_y = int(max(0, bottom))
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
     
-    # Bounding box inputs (auto-filled when a rectangle is drawn)
-    st.write("Bounding box (auto-filled from drawing):")
+    # Bounding box inputs (auto-filled from cropper)
+    st.write("Bounding box (auto-filled from cropper):")
     s_left, c1, c2, c3, c4, s_right = st.columns([1, 2, 2, 2, 2, 1])
     with c1:
         top_x = st.number_input("Top X", min_value=0, value=top_x, step=1)
@@ -25,13 +62,6 @@ def AddLabel(image=None):
         bottom_x = st.number_input("Bottom X", min_value=0, value=bottom_x, step=1)
     with c4:
         bottom_y = st.number_input("Bottom Y", min_value=0, value=bottom_y, step=1)
-
-    # Live preview overlay using PIL
-    if image is not None and bottom_x > top_x and bottom_y > top_y:
-        preview_img = image.copy()
-        drawer = ImageDraw.Draw(preview_img)
-        drawer.rectangle([(top_x, top_y), (bottom_x, bottom_y)], outline="red", width=3)
-        st.image(preview_img, caption="Preview with rectangle", use_container_width=True)
 
 
 
