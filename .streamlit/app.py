@@ -1,11 +1,15 @@
 import streamlit as st
 import fitz  # PyMuPDF
 from PIL import Image, ImageDraw
+import sys
+
+# Development mode: Always reload components on every run
+for module_name in list(sys.modules.keys()):
+    if module_name.startswith('components'):
+        del sys.modules[module_name]
+
+# Import label dialog component
 from components.label_dialog import AddLabel
-# Import and reload to avoid cache issues
-
-
-
 
 # Set page configuration for screen size (must be first Streamlit command)
 st.set_page_config(
