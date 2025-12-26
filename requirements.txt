@@ -1,5 +1,7 @@
-streamlit==1.40.0
-streamlit-drawable-canvas
+streamlit==latest
+PyMuPDF
+Pillow
+fitz
 PyMuPDF
 Pillow
 streamlit
